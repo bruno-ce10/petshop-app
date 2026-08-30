@@ -1,0 +1,468 @@
+import React, { useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "../theme/colors";
+import { useApp } from "../context/AppContext";
+
+const SERVICES = ["Banho", "Tosa", "Consulta"];
+
+export default function NovoAgendamentoScreen({ navigation }) {
+  const { pets, addAppointment, getAvailableSlots } = useApp();
+  const [petId, setPetId] = useState(pets[0]?.id ?? null);
+  const [selectedServices, setSelectedServices] = useState(["Banho"]);
+  const [date, setDate] = useState("");
+  const [dateIso, setDateIso] = useState("");
+  const [dateObject, setDateObject] = useState(new Date());
+  const [pickerMonth, setPickerMonth] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [time, setTime] = useState(null);
+  const [error, setError] = useState("");
+
+  const availableSlots = useMemo(() => {
+    if (!dateIso) return [];
+    return getAvailableSlots(dateIso);
+  }, [dateIso, getAvailableSlots]);
+
+  const calendarDays = useMemo(() => {
+    const monthStart = new Date(
+      pickerMonth.getFullYear(),
+      pickerMonth.getMonth(),
+      1
+    );
+    const startDayIndex = (monthStart.getDay() + 6) % 7;
+    const totalDaysInMonth = new Date(
+      pickerMonth.getFullYear(),
+      pickerMonth.getMonth() + 1,
+      0
+    ).getDate();
+    const totalDaysInPreviousMonth = new Date(
+      pickerMonth.getFullYear(),
+      pickerMonth.getMonth(),
+      0
+    ).getDate();
+    const cells = [];
+
+    for (let i = 0; i < 42; i += 1) {
+      const dayNumber = i - startDayIndex + 1;
+      const monthOffset = dayNumber <= 0 ? -1 : dayNumber > totalDaysInMonth ? 1 : 0;
+      const targetMonth = monthOffset === 0 ? pickerMonth.getMonth() : pickerMonth.getMonth() + monthOffset;
+      const targetYear = monthOffset === 0 ? pickerMonth.getFullYear() : new Date(pickerMonth.getFullYear(), targetMonth, 1).getFullYear();
+      const finalDay =
+        monthOffset === 0
+          ? dayNumber
+          : monthOffset < 0
+            ? totalDaysInPreviousMonth + dayNumber
+            : dayNumber - totalDaysInMonth;
+
+      const dateValue = new Date(targetYear, targetMonth, finalDay);
+      cells.push({
+        key: `${targetYear}-${targetMonth}-${finalDay}`,
+        value: dateValue,
+        isCurrentMonth: monthOffset === 0,
+      });
+    }
+
+    return cells;
+  }, [pickerMonth]);
+
+  function formatDateToBR(dateValue) {
+    const dateToFormat = new Date(dateValue);
+    const day = String(dateToFormat.getDate()).padStart(2, "0");
+    const month = String(dateToFormat.getMonth() + 1).padStart(2, "0");
+    const year = dateToFormat.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  function formatDateToISO(dateValue) {
+    const dateToFormat = new Date(dateValue);
+    const year = dateToFormat.getFullYear();
+    const month = String(dateToFormat.getMonth() + 1).padStart(2, "0");
+    const day = String(dateToFormat.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function onDateChange(_, selectedDate) {
+    const currentDate = selectedDate ?? dateObject;
+    setShowDatePicker(false);
+    setDateObject(currentDate);
+    const formattedDate = formatDateToBR(currentDate);
+    const isoDate = formatDateToISO(currentDate);
+    setDate(formattedDate);
+    setDateIso(isoDate);
+    setTime(null);
+  }
+
+  function applySelectedDate(currentDate) {
+    setShowDatePicker(false);
+    setDateObject(currentDate);
+    const formattedDate = formatDateToBR(currentDate);
+    const isoDate = formatDateToISO(currentDate);
+    setDate(formattedDate);
+    setDateIso(isoDate);
+    setTime(null);
+  }
+
+  function handleWebDateSelect(dayDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dayDate < today) return;
+    applySelectedDate(dayDate);
+  }
+
+  function toggleService(serviceName) {
+    setSelectedServices((prev) => {
+      if (prev.includes(serviceName)) {
+        const next = prev.filter((item) => item !== serviceName);
+        return next.length > 0 ? next : [serviceName];
+      }
+      return [...prev, serviceName];
+    });
+  }
+
+  function handleConfirm() {
+    if (pets.length === 0) {
+      setError("Cadastre um pet antes de agendar.");
+      return;
+    }
+    if (!petId || selectedServices.length === 0 || !date.trim() || !time) {
+      setError("Selecione pet, serviço, data e horário para continuar.");
+      return;
+    }
+    const pet = pets.find((p) => p.id === petId);
+    const isoDate = dateIso || formatDateToISO(dateObject);
+    const serviceLabel = selectedServices.join(" + ");
+
+    addAppointment({
+      petId,
+      petName: pet?.name ?? "",
+      service: serviceLabel,
+      date: isoDate,
+      time,
+    });
+    setError("");
+    setTime(null);
+    Alert.alert("Agendamento realizado", "Seu horário foi reservado com sucesso.");
+    navigation.navigate("MeusAgendamentos");
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+    <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <Text style={styles.label}>Pet</Text>
+      {pets.length === 0 ? (
+        <Text style={styles.warning}>
+          Você ainda não tem pets cadastrados. Cadastre um na aba "Meus pets".
+        </Text>
+      ) : (
+        <View style={styles.chipsRow}>
+          {pets.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={[styles.chip, petId === p.id && styles.chipActive]}
+              onPress={() => setPetId(p.id)}
+            >
+              <Text
+                style={[styles.chipText, petId === p.id && styles.chipTextActive]}
+              >
+                {p.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <Text style={styles.label}>Serviço</Text>
+      <View style={styles.chipsRow}>
+        {SERVICES.map((s) => {
+          const isSelected = selectedServices.includes(s);
+          return (
+            <TouchableOpacity
+              key={s}
+              style={[styles.chip, isSelected && styles.chipActive]}
+              onPress={() => toggleService(s)}
+            >
+              <Text
+                style={[styles.chipText, isSelected && styles.chipTextActive]}
+              >
+                {s}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.label}>Data</Text>
+      <TouchableOpacity
+        style={styles.inputButton}
+        onPress={() => setShowDatePicker(true)}
+      >
+        <Text style={[styles.inputText, !date && styles.inputPlaceholder]}>
+          {date || "Selecione a data"}
+        </Text>
+      </TouchableOpacity>
+
+      {showDatePicker &&
+        (Platform.OS === "web" ? (
+          <View style={styles.calendarContainer}>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity
+                onPress={() =>
+                  setPickerMonth(
+                    new Date(
+                      pickerMonth.getFullYear(),
+                      pickerMonth.getMonth() - 1,
+                      1
+                    )
+                  )
+                }
+              >
+                <Text style={styles.calendarNav}>◀</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.calendarTitle}>
+                {pickerMonth.toLocaleDateString("pt-BR", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  setPickerMonth(
+                    new Date(
+                      pickerMonth.getFullYear(),
+                      pickerMonth.getMonth() + 1,
+                      1
+                    )
+                  )
+                }
+              >
+                <Text style={styles.calendarNav}>▶</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.weekRow}>
+              {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map((day) => (
+                <Text key={day} style={styles.weekDay}>{day}</Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((item) => {
+                const isSelected =
+                  item.isCurrentMonth &&
+                  item.value.toDateString() === dateObject.toDateString();
+                const isPast = item.value < new Date(new Date().setHours(0,0,0,0));
+
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.dayCell,
+                      !item.isCurrentMonth && styles.dayCellMuted,
+                      isSelected && styles.dayCellSelected,
+                      isPast && item.isCurrentMonth && styles.dayCellDisabled,
+                    ]}
+                    onPress={() => handleWebDateSelect(item.value)}
+                    disabled={isPast || !item.isCurrentMonth}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        isSelected && styles.dayTextSelected,
+                        isPast && item.isCurrentMonth && styles.dayTextDisabled,
+                      ]}
+                    >
+                      {item.value.getDate()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <DateTimePicker
+            value={dateObject}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            minimumDate={new Date()}
+            onChange={onDateChange}
+          />
+        ))}
+
+      <Text style={styles.label}>Horários disponíveis</Text>
+      {!dateIso ? (
+        <Text style={styles.hint}>Informe uma data para ver os horários.</Text>
+      ) : availableSlots.length === 0 ? (
+        <Text style={styles.hint}>Nenhum horário livre nessa data.</Text>
+      ) : (
+        <View style={styles.chipsRow}>
+          {availableSlots.map((slot) => (
+            <TouchableOpacity
+              key={slot}
+              style={[styles.slot, time === slot && styles.slotActive]}
+              onPress={() => setTime(slot)}
+            >
+              <Text
+                style={[styles.slotText, time === slot && styles.slotTextActive]}
+              >
+                {slot}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {!!error && <Text style={styles.error}>{error}</Text>}
+
+      <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+        <Text style={styles.confirmButtonText}>Confirmar agendamento</Text>
+      </TouchableOpacity>
+    </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  label: { fontSize: 12, color: colors.textSecondary, marginBottom: 6, marginTop: 14 },
+  hint: { fontSize: 12, color: colors.textMuted },
+  warning: { fontSize: 12, color: colors.warning },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  chipText: { fontSize: 12, color: colors.textSecondary },
+  chipTextActive: { color: colors.primaryDark, fontWeight: "500" },
+  slot: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  slotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  slotText: { fontSize: 12, color: colors.textSecondary },
+  slotTextActive: { color: "#fff", fontWeight: "500" },
+  input: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  inputButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    justifyContent: "center",
+  },
+  inputText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  inputPlaceholder: {
+    color: colors.textMuted,
+  },
+  calendarContainer: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  calendarNav: {
+    fontSize: 18,
+    color: colors.primary,
+    fontWeight: "700",
+  },
+  calendarTitle: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    textTransform: "capitalize",
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  weekDay: {
+    width: "14%",
+    textAlign: "center",
+    fontSize: 10,
+    color: colors.textSecondary,
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  dayCell: {
+    width: "14%",
+    aspectRatio: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  dayCellMuted: {
+    opacity: 0.35,
+  },
+  dayCellSelected: {
+    backgroundColor: colors.primary,
+  },
+  dayCellDisabled: {
+    backgroundColor: colors.background,
+    opacity: 0.4,
+  },
+  dayText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+  },
+  dayTextSelected: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  dayTextDisabled: {
+    color: colors.textMuted,
+  },
+  error: { color: colors.danger, fontSize: 12, marginTop: 14 },
+  confirmButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  confirmButtonText: { color: "#fff", fontSize: 15, fontWeight: "600" },
+});
