@@ -34,7 +34,9 @@ function TutorTabs() {
           <TouchableOpacity
             onPress={() => {
               logout();
-              navigation.reset({
+              // Precisa subir pro navegador pai (Stack), pois "Login" não
+              // existe entre as rotas do Tab.Navigator
+              navigation.getParent()?.reset({
                 index: 0,
                 routes: [{ name: "Login" }],
               });

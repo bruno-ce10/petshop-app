@@ -34,8 +34,16 @@ const STATUS_META = {
   cancelado: { bg: colors.dangerLight, text: colors.danger, label: "Cancelado" },
 };
 
+// Etiqueta mostrando a categoria de agendamento do pet, pra loja já saber
+// se é um atendimento "normal", com horário restrito, ou combinado por fora.
+const CATEGORY_META = {
+  livre: { bg: colors.successLight, text: colors.success, label: "Livre" },
+  restrito: { bg: colors.warningLight, text: colors.warning, label: "Restrito" },
+  contato: { bg: colors.dangerLight, text: colors.danger, label: "Contato direto" },
+};
+
 export default function AgendaLojistaScreen() {
-  const { appointments, updateAppointmentStatus, deleteAppointment } = useApp();
+  const { appointments, updateAppointmentStatus, deleteAppointment, pets, getPetScheduleCategory } = useApp();
   const [mode, setMode] = useState("dia"); // "dia" | "semana"
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -118,6 +126,10 @@ export default function AgendaLojistaScreen() {
               const isConcluded = item.status === "concluido";
               const showCancelButton = item.status !== "cancelado" && !isConcluded;
               const statusMeta = STATUS_META[item.status] ?? STATUS_META.pendente;
+              const pet = pets.find((p) => p.id === item.petId);
+              const petCategory = getPetScheduleCategory(pet);
+              const categoryMeta = CATEGORY_META[petCategory];
+
               return (
                 <View key={item.id} style={styles.slotCard}>
                   <View style={styles.slotTimeCol}>
@@ -130,10 +142,19 @@ export default function AgendaLojistaScreen() {
                   <View style={styles.slotInfo}>
                     <Text style={styles.slotPet}>{item.petName}</Text>
                     <Text style={styles.slotService}>{item.service}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg }]}>
-                      <Text style={[styles.statusBadgeText, { color: statusMeta.text }]}>
-                        {statusMeta.label}
-                      </Text>
+                    <View style={styles.badgeRow}>
+                      <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: statusMeta.text }]}>
+                          {statusMeta.label}
+                        </Text>
+                      </View>
+                      {categoryMeta && (
+                        <View style={[styles.statusBadge, { backgroundColor: categoryMeta.bg }]}>
+                          <Text style={[styles.statusBadgeText, { color: categoryMeta.text }]}>
+                            {categoryMeta.label}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
 
@@ -226,9 +247,9 @@ const styles = StyleSheet.create({
   slotInfo: { flex: 1 },
   slotPet: { fontSize: 13, fontWeight: "600", color: colors.textPrimary },
   slotService: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
   statusBadge: {
     alignSelf: "flex-start",
-    marginTop: 6,
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 999,

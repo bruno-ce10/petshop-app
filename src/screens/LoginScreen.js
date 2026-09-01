@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
-import { useApp } from "../context/AppContext";
+import { useApp, PETSHOP_ADDRESS } from "../context/AppContext";
+import { openPetshopWhatsapp, openPetshopMap } from "../utils/contact";
 
 export default function LoginScreen({ navigation }) {
   const { login, registerUser } = useApp();
@@ -66,6 +68,11 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.logoWrap}>
         <View style={styles.logoCircle}>
           <Ionicons name="paw" size={28} color={colors.primary} />
@@ -147,6 +154,30 @@ export default function LoginScreen({ navigation }) {
         <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
         <Text style={styles.secondaryButtonText}>Ver agenda do lojista</Text>
       </TouchableOpacity>
+
+      <View style={styles.contactCard}>
+        <Text style={styles.contactTitle}>Dúvidas ou informações?</Text>
+        <Text style={styles.contactText}>
+          Fale com a loja pelo WhatsApp a qualquer momento, sem precisar entrar no app.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.contactRow}
+          onPress={openPetshopMap}
+        >
+          <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.contactRowText}>{PETSHOP_ADDRESS}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.whatsappButton}
+          onPress={() => openPetshopWhatsapp()}
+        >
+          <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+          <Text style={styles.whatsappButtonText}>Falar no WhatsApp</Text>
+        </TouchableOpacity>
+      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -155,7 +186,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollContent: {
     padding: 24,
+    flexGrow: 1,
     justifyContent: "center",
   },
   logoWrap: { alignItems: "center", marginBottom: 32 },
@@ -215,4 +249,31 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   secondaryButtonText: { color: colors.textSecondary, fontSize: 13 },
+  contactCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  contactTitle: { fontSize: 13, fontWeight: "700", color: colors.textPrimary },
+  contactText: { fontSize: 12, color: colors.textSecondary, marginTop: 4, marginBottom: 12 },
+  contactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  contactRowText: { fontSize: 12, color: colors.textSecondary, flex: 1, textDecorationLine: "underline" },
+  whatsappButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#25D366",
+    borderRadius: 10,
+    paddingVertical: 12,
+  },
+  whatsappButtonText: { color: "#fff", fontSize: 13, fontWeight: "600" },
 });
