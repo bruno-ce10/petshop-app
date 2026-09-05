@@ -15,8 +15,8 @@ function buildSlots(startHour, endHour) {
   return slots;
 }
 
-export const ALL_SLOTS = buildSlots(9, 17); // 09:00 ... 17:00
-export const RESTRICTED_SLOTS = buildSlots(9, 11); // 09:00 ... 11:00
+export const ALL_SLOTS = buildSlots(9, 16.5); // 09:00 ... 16:30
+export const RESTRICTED_SLOTS = buildSlots(9, 12); // 09:00 ... 12:00
 // Dias permitidos para pets da categoria "restrita": segunda(1), quarta(3), sexta(5)
 export const RESTRICTED_WEEKDAYS = [1, 3, 5];
 
@@ -26,6 +26,13 @@ export const PETSHOP_WHATSAPP = "5551994117434";
 
 // Endereço da loja, exibido para os usuários.
 export const PETSHOP_ADDRESS = "Rua São Manoel, 1836, Porto Alegre - RS";
+
+// Consulta é um serviço separado (sua própria "agenda"); banho e tosa
+// compartilham a mesma agenda entre si (podem ser marcados juntos).
+export function getServiceGroup(serviceLabel) {
+  if (!serviceLabel) return "banho_tosa";
+  return serviceLabel.includes("Consulta") ? "consulta" : "banho_tosa";
+}
 
 const initialState = {
   user: null,
@@ -195,7 +202,7 @@ export function AppProvider({ children }) {
   // - reason "pet_restricoes": esse pet sempre precisa de contato direto com a loja
   // - reason "dia_invalido": categoria restrita, mas o dia escolhido não é seg/qua/sex
   // - reason "sem_disponibilidade": não sobrou nenhum horário livre nessa data
-  function getAvailableSlots(date, pet) {
+  function getAvailableSlots(date, pet, serviceGroup = "banho_tosa") {
     const category = getPetScheduleCategory(pet);
 
     if (category === "contato") {
@@ -212,8 +219,15 @@ export function AppProvider({ children }) {
       baseSlots = RESTRICTED_SLOTS;
     }
 
+    // Só conta como "ocupado" um horário que já tenha agendamento do MESMO
+    // grupo de serviço — consulta e banho/tosa não brigam pelo mesmo horário.
     const taken = appointments
-      .filter((a) => a.date === date && a.status !== "cancelado")
+      .filter(
+        (a) =>
+          a.date === date &&
+          a.status !== "cancelado" &&
+          getServiceGroup(a.service) === serviceGroup
+      )
       .map((a) => a.time);
     const slots = baseSlots.filter((slot) => !taken.includes(slot));
 

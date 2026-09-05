@@ -82,7 +82,7 @@ export default function AgendaLojistaScreen() {
           </View>
         </View>
 
-      {mode === "dia" ? (
+      {mode === "dia" && (
         <View style={styles.dayNav}>
           <TouchableOpacity
             onPress={() => {
@@ -104,14 +104,6 @@ export default function AgendaLojistaScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekRow}>
-          {weekDates.map((d) => (
-            <View key={d} style={styles.weekChip}>
-              <Text style={styles.weekChipText}>{formatShort(d)}</Text>
-            </View>
-          ))}
-        </ScrollView>
       )}
 
         <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 20 }}>

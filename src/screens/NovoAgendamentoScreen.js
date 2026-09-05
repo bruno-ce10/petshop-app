@@ -11,7 +11,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
-import { useApp } from "../context/AppContext";
+import { useApp, getServiceGroup } from "../context/AppContext";
 import { openPetshopWhatsapp } from "../utils/contact";
 
 const SERVICES = ["Banho", "Tosa", "Consulta"];
@@ -20,7 +20,7 @@ const CATEGORY_INFO = {
   restrito: {
     label: "Horário restrito",
     message:
-      "Esse pet tem horários específicos: segundas, quartas e sextas, das 9h às 11h.",
+      "Por causa do porte, comportamento ou condição de saúde informados no cadastro desse pet, os agendamentos só acontecem às segundas, quartas e sextas, das 9h às 11h.",
   },
   contato: {
     label: "Contato direto com a loja",
@@ -33,7 +33,7 @@ const REASON_MESSAGES = {
   pet_restricoes:
     "Esse pet precisa de agendamento combinado direto com a loja. Toque no botão abaixo para falar no WhatsApp.",
   dia_invalido:
-    "Esse pet só agenda às segundas, quartas e sextas. Escolha um desses dias ou fale direto com a loja.",
+    "Por causa do porte, comportamento ou condição de saúde desse pet, os agendamentos só acontecem às segundas, quartas e sextas, das 9h às 11h. Escolha um desses dias ou fale direto com a loja.",
   sem_disponibilidade:
     "Não há horários livres nessa data. Fale com a loja para verificar outra opção.",
 };
@@ -60,10 +60,15 @@ export default function NovoAgendamentoScreen({ navigation }) {
   );
   const requiresContactAlways = category === "contato";
 
+  const serviceGroup = useMemo(
+    () => getServiceGroup(selectedServices.join(" + ")),
+    [selectedServices]
+  );
+
   const slotResult = useMemo(() => {
     if (!dateIso || !selectedPet) return { slots: [], requiresContact: false, reason: null };
-    return getAvailableSlots(dateIso, selectedPet);
-  }, [dateIso, selectedPet, getAvailableSlots]);
+    return getAvailableSlots(dateIso, selectedPet, serviceGroup);
+  }, [dateIso, selectedPet, serviceGroup, getAvailableSlots]);
 
   const calendarDays = useMemo(() => {
     const monthStart = new Date(
@@ -146,14 +151,23 @@ export default function NovoAgendamentoScreen({ navigation }) {
     applySelectedDate(dayDate);
   }
 
-  function toggleService(serviceName) {
+  function selectService(serviceName) {
+    if (serviceName === "Consulta") {
+      // Consulta é sempre sozinha, numa agenda separada.
+      setSelectedServices(["Consulta"]);
+      setTime(null);
+      return;
+    }
+    // Banho e Tosa podem ser combinados entre si, mas não com Consulta.
     setSelectedServices((prev) => {
-      if (prev.includes(serviceName)) {
-        const next = prev.filter((item) => item !== serviceName);
+      const withoutConsulta = prev.filter((s) => s !== "Consulta");
+      if (withoutConsulta.includes(serviceName)) {
+        const next = withoutConsulta.filter((s) => s !== serviceName);
         return next.length > 0 ? next : [serviceName];
       }
-      return [...prev, serviceName];
+      return [...withoutConsulta, serviceName];
     });
+    setTime(null);
   }
 
   function handleConfirm() {
@@ -247,7 +261,7 @@ export default function NovoAgendamentoScreen({ navigation }) {
                   <TouchableOpacity
                     key={s}
                     style={[styles.chip, isSelected && styles.chipActive]}
-                    onPress={() => toggleService(s)}
+                    onPress={() => selectService(s)}
                   >
                     <Text
                       style={[styles.chipText, isSelected && styles.chipTextActive]}

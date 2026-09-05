@@ -2,7 +2,7 @@ import React from "react";
 import { TouchableOpacity } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { colors } from "../theme/colors";
 import { useApp } from "../context/AppContext";
@@ -16,7 +16,6 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const ICONS = {
-  MeusPets: "paw-outline",
   NovoAgendamento: "add-circle-outline",
   MeusAgendamentos: "calendar-outline",
 };
@@ -48,9 +47,12 @@ function TutorTabs() {
         ),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={ICONS[route.name]} size={size} color={color} />
-        ),
+        tabBarIcon: ({ color, size }) => {
+          if (route.name === "MeusPets") {
+            return <MaterialCommunityIcons name="dog" size={size} color={color} />;
+          }
+          return <Ionicons name={ICONS[route.name]} size={size} color={color} />;
+        },
       })}
     >
       <Tab.Screen

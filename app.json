@@ -1,12 +1,15 @@
 {
   "expo": {
-    "name": "PetShop App",
+    "name": "Mascotti PetShop",
     "slug": "petshop-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#0F6E56"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6B6C44"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -15,7 +18,11 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.petshopapp.extensionista"
+      "package": "com.petshopapp.extensionista",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6B6C44"
+      }
     },
     "web": {
       "bundler": "metro"
@@ -25,3 +32,4 @@
     ]
   }
 }
+

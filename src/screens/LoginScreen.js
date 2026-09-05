@@ -7,6 +7,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   ScrollView,
+  Image,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -74,10 +75,11 @@ export default function LoginScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
       <View style={styles.logoWrap}>
-        <View style={styles.logoCircle}>
-          <Ionicons name="paw" size={28} color={colors.primary} />
-        </View>
-        <Text style={styles.title}>PetShop App</Text>
+        <Image
+          source={require("../../assets/logo_source.jpeg")}
+          style={styles.logoImage}
+        />
+        <Text style={styles.title}>Mascotti PetShop</Text>
         <Text style={styles.subtitle}>
           Cadastre seu pet e marque banho, tosa ou consulta
         </Text>
@@ -193,13 +195,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoWrap: { alignItems: "center", marginBottom: 32 },
-  logoCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     marginBottom: 10,
   },
   title: { fontSize: 20, fontWeight: "600", color: colors.textPrimary },

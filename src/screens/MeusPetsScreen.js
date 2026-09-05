@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
 import { useApp } from "../context/AppContext";
 
@@ -19,6 +19,16 @@ const SIZES = ["Pequeno", "Médio", "Grande"];
 const GENDERS = ["Macho", "Fêmea"];
 const YES_NO = ["Sim", "Não"];
 const BEHAVIOR_OPTIONS = ["Calmo", "Nervoso", "Bravo", "Outro"];
+
+function PetSpeciesIcon({ species, size = 18, color }) {
+  if (species === "Cachorro") {
+    return <MaterialCommunityIcons name="dog" size={size} color={color} />;
+  }
+  if (species === "Gato") {
+    return <MaterialCommunityIcons name="cat" size={size} color={color} />;
+  }
+  return <MaterialCommunityIcons name="paw" size={size} color={color} />;
+}
 
 export default function MeusPetsScreen() {
   const { pets, addPet, removePet } = useApp();
@@ -85,7 +95,7 @@ export default function MeusPetsScreen() {
       <View style={styles.content}>
         {pets.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="paw-outline" size={28} color={colors.textMuted} />
+            <MaterialCommunityIcons name="dog" size={28} color={colors.textMuted} />
             <Text style={styles.emptyTitle}>Nenhum pet cadastrado</Text>
             <Text style={styles.emptyText}>
               Toque em + para cadastrar seu primeiro pet.
@@ -99,7 +109,7 @@ export default function MeusPetsScreen() {
             renderItem={({ item }) => (
               <View style={styles.petCard}>
                 <View style={styles.petIcon}>
-                  <Ionicons name="paw" size={18} color={colors.primary} />
+                  <PetSpeciesIcon species={item.species} size={18} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.petName}>{item.name}</Text>
@@ -355,9 +365,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   emptyState: { alignItems: "center", marginTop: 60, gap: 6 },
-  emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.textPrimary },
+  emptyTitle: { fontSize: 17, fontWeight: "500", color: colors.textPrimary },
   emptyText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: "center",
     paddingHorizontal: 30,
@@ -380,9 +390,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  petName: { fontSize: 14, fontWeight: "500", color: colors.textPrimary },
-  petMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  petDetails: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+  petName: { fontSize: 17, fontWeight: "500", color: colors.textPrimary },
+  petMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  petDetails: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -402,8 +412,8 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     paddingBottom: 12,
   },
-  modalTitle: { fontSize: 16, fontWeight: "600", marginBottom: 12, color: colors.textPrimary },
-  label: { fontSize: 12, color: colors.textSecondary, marginBottom: 4, marginTop: 10 },
+  modalTitle: { fontSize: 19, fontWeight: "600", marginBottom: 12, color: colors.textPrimary },
+  label: { fontSize: 15, color: colors.textSecondary, marginBottom: 4, marginTop: 10 },
   input: {
     backgroundColor: colors.background,
     borderWidth: 1,
@@ -411,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textPrimary,
   },
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -423,9 +433,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: 12, color: colors.textSecondary },
+  chipText: { fontSize: 15, color: colors.textSecondary },
   chipTextActive: { color: colors.primaryDark, fontWeight: "500" },
-  error: { color: colors.danger, fontSize: 12, marginTop: 10 },
+  error: { color: colors.danger, fontSize: 14, marginTop: 10 },
   modalActions: { flexDirection: "row", gap: 10, marginTop: 20 },
   cancelButton: {
     flex: 1,
@@ -435,7 +445,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
   },
-  cancelButtonText: { color: colors.textSecondary, fontSize: 14 },
+  cancelButtonText: { color: colors.textSecondary, fontSize: 16 },
   saveButton: {
     flex: 1,
     paddingVertical: 12,
@@ -443,5 +453,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: "center",
   },
-  saveButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });
