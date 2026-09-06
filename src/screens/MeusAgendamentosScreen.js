@@ -27,11 +27,25 @@ export default function MeusAgendamentosScreen() {
   );
 
   function handleCancel(id) {
-    cancelAppointment(id);
+    Alert.alert(
+      "Cancelar agendamento",
+      "Tem certeza que deseja cancelar esse agendamento?",
+      [
+        { text: "Voltar", style: "cancel" },
+        { text: "Cancelar horário", style: "destructive", onPress: () => cancelAppointment(id) },
+      ]
+    );
   }
 
   function handleDelete(id) {
-    deleteAppointment(id);
+    Alert.alert(
+      "Excluir agendamento",
+      "Essa ação não pode ser desfeita. Deseja excluir mesmo assim?",
+      [
+        { text: "Voltar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: () => deleteAppointment(id) },
+      ]
+    );
   }
 
   return (

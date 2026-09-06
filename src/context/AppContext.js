@@ -5,24 +5,24 @@ const AppContext = createContext(null);
 
 const STORAGE_KEY = "@petshop_app_data_v1";
 
-// Horários gerais: a cada 30 minutos, das 9h às 17h
-function buildSlots(startHour, endHour) {
+// Horários gerais: a cada 30 minutos, das 9h às 16h30 (loja fecha às 17h)
+function buildSlots(startHour, endHour, includeHalfAtEnd = false) {
   const slots = [];
   for (let h = startHour; h <= endHour; h += 1) {
     slots.push(`${String(h).padStart(2, "0")}:00`);
-    if (h < endHour) slots.push(`${String(h).padStart(2, "0")}:30`);
+    if (h < endHour || includeHalfAtEnd) slots.push(`${String(h).padStart(2, "0")}:30`);
   }
   return slots;
 }
 
-export const ALL_SLOTS = buildSlots(9, 16.5); // 09:00 ... 16:30
+export const ALL_SLOTS = buildSlots(9, 16, true); // 09:00 ... 16:30
 export const RESTRICTED_SLOTS = buildSlots(9, 12); // 09:00 ... 12:00
 // Dias permitidos para pets da categoria "restrita": segunda(1), quarta(3), sexta(5)
 export const RESTRICTED_WEEKDAYS = [1, 3, 5];
 
 // Número da loja para contato direto (formato internacional, só dígitos).
 // TROQUE pelo número real do WhatsApp do pet shop.
-export const PETSHOP_WHATSAPP = "5551994117434";
+export const PETSHOP_WHATSAPP = "5551999999999";
 
 // Endereço da loja, exibido para os usuários.
 export const PETSHOP_ADDRESS = "Rua São Manoel, 1836, Porto Alegre - RS";
@@ -188,7 +188,16 @@ export function AppProvider({ children }) {
 
   // ----  - pets ----
   function addPet(pet) {
-    const newPet = { id: Date.now().toString(), ...pet };
+    const newPet = {
+      id: Date.now().toString(),
+      // Guarda os dados do tutor logado junto do pet, pra loja conseguir
+      // ver quem é o dono e o WhatsApp dele na agenda.
+      ownerId: user?.id ?? null,
+      ownerName: user?.name ?? "",
+      ownerEmail: user?.email ?? "",
+      ownerWhatsapp: user?.whatsapp ?? "",
+      ...pet,
+    };
     setPets((prev) => [...prev, newPet]);
     return newPet;
   }
@@ -203,6 +212,26 @@ export function AppProvider({ children }) {
   // - reason "dia_invalido": categoria restrita, mas o dia escolhido não é seg/qua/sex
   // - reason "sem_disponibilidade": não sobrou nenhum horário livre nessa data
   function getAvailableSlots(date, pet, serviceGroup = "banho_tosa") {
+    // Consulta é sempre livre para todos os pets, em qualquer horário do dia,
+    // independente do porte/comportamento/saúde — a categoria do pet só
+    // afeta o agendamento de Banho/Tosa.
+    if (serviceGroup === "consulta") {
+      const takenConsulta = appointments
+        .filter(
+          (a) =>
+            a.date === date &&
+            a.status !== "cancelado" &&
+            getServiceGroup(a.service) === "consulta"
+        )
+        .map((a) => a.time);
+      const consultaSlots = ALL_SLOTS.filter((slot) => !takenConsulta.includes(slot));
+      return {
+        slots: consultaSlots,
+        requiresContact: consultaSlots.length === 0,
+        reason: consultaSlots.length === 0 ? "sem_disponibilidade" : null,
+      };
+    }
+
     const category = getPetScheduleCategory(pet);
 
     if (category === "contato") {

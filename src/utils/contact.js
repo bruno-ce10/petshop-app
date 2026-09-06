@@ -1,28 +1,27 @@
-import { Alert, Linking, Platform } from "react-native";
+import { Alert, Linking } from "react-native";
 import { PETSHOP_WHATSAPP, PETSHOP_ADDRESS } from "../context/AppContext";
 
-export function openPetshopWhatsapp(message) {
-  const phone = String(PETSHOP_WHATSAPP).replace(/\D/g, "");
-  const text = encodeURIComponent(
-    message || "Olá! Gostaria de tirar uma dúvida ou pedir uma informação."
-  );
-  const webUrl = `https://wa.me/${phone}?text=${text}`;
-  const appUrl = `whatsapp://send?phone=${phone}&text=${text}`;
+// Abre o WhatsApp para QUALQUER número (loja, tutor, etc.). Aceita o número
+// digitado de qualquer jeito (com parênteses, traço, espaço) e adiciona o
+// código do Brasil (55) se ainda não tiver.
+export function openWhatsapp(rawNumber, message) {
+  const digits = (rawNumber || "").replace(/\D/g, "");
 
-  if (!phone || phone.length < 10) {
-    Alert.alert("Número inválido", "Confira o número de WhatsApp da loja.");
+  if (!digits) {
+    Alert.alert("Sem WhatsApp cadastrado", "Esse tutor não tem um número de WhatsApp registrado.");
     return;
   }
 
-  const openUrl = Platform.OS === "web"
-    ? Linking.openURL(webUrl)
-    : Linking.canOpenURL(appUrl).then((canOpen) =>
-        Linking.openURL(canOpen ? appUrl : webUrl)
-      );
-
-  openUrl.catch(() =>
+  const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
+  const text = encodeURIComponent(message || "Olá!");
+  const url = `https://wa.me/${withCountryCode}?text=${text}`;
+  Linking.openURL(url).catch(() =>
     Alert.alert("Não foi possível abrir o WhatsApp", "Verifique se o app está instalado.")
   );
+}
+
+export function openPetshopWhatsapp(message) {
+  openWhatsapp(PETSHOP_WHATSAPP, message);
 }
 
 export function openPetshopMap() {

@@ -18,22 +18,22 @@ const SERVICES = ["Banho", "Tosa", "Consulta"];
 
 const CATEGORY_INFO = {
   restrito: {
-    label: "Horário restrito",
+    label: "Horário restrito (Banho/Tosa)",
     message:
-      "Por causa do porte, comportamento ou condição de saúde informados no cadastro desse pet, os agendamentos só acontecem às segundas, quartas e sextas, das 9h às 11h.",
+      "Por causa do porte, comportamento ou condição de saúde informados no cadastro desse pet, o Banho/Tosa só pode ser marcado às segundas, quartas e sextas, das 9h às 12h. A Consulta continua livre em qualquer horário.",
   },
   contato: {
-    label: "Contato direto com a loja",
+    label: "Contato direto (Banho/Tosa)",
     message:
-      "Pelo porte, comportamento e problema de saúde informados, o agendamento desse pet precisa ser combinado direto com a loja.",
+      "Pelo porte, comportamento e problema de saúde informados, o Banho/Tosa desse pet precisa ser combinado direto com a loja. A Consulta continua livre em qualquer horário.",
   },
 };
 
 const REASON_MESSAGES = {
   pet_restricoes:
-    "Esse pet precisa de agendamento combinado direto com a loja. Toque no botão abaixo para falar no WhatsApp.",
+    "O Banho/Tosa desse pet precisa de agendamento combinado direto com a loja. Toque no botão abaixo para falar no WhatsApp.",
   dia_invalido:
-    "Por causa do porte, comportamento ou condição de saúde desse pet, os agendamentos só acontecem às segundas, quartas e sextas, das 9h às 11h. Escolha um desses dias ou fale direto com a loja.",
+    "Por causa do porte, comportamento ou condição de saúde desse pet, o Banho/Tosa só acontece às segundas, quartas e sextas, das 9h às 12h. Escolha um desses dias ou fale direto com a loja.",
   sem_disponibilidade:
     "Não há horários livres nessa data. Fale com a loja para verificar outra opção.",
 };
@@ -58,12 +58,15 @@ export default function NovoAgendamentoScreen({ navigation }) {
     () => getPetScheduleCategory(selectedPet),
     [selectedPet, getPetScheduleCategory]
   );
-  const requiresContactAlways = category === "contato";
-
   const serviceGroup = useMemo(
     () => getServiceGroup(selectedServices.join(" + ")),
     [selectedServices]
   );
+
+  // A categoria do pet (restrito/contato) só vale para Banho/Tosa.
+  // Consulta é sempre livre, então nunca exige contato direto.
+  const requiresContactAlways = serviceGroup === "banho_tosa" && category === "contato";
+  const showCategoryBanner = serviceGroup === "banho_tosa" && !!CATEGORY_INFO[category];
 
   const slotResult = useMemo(() => {
     if (!dateIso || !selectedPet) return { slots: [], requiresContact: false, reason: null };
@@ -228,7 +231,7 @@ export default function NovoAgendamentoScreen({ navigation }) {
           </View>
         )}
 
-        {selectedPet && CATEGORY_INFO[category] && (
+        {selectedPet && showCategoryBanner && (
           <View
             style={[
               styles.categoryBanner,
@@ -240,12 +243,32 @@ export default function NovoAgendamentoScreen({ navigation }) {
           </View>
         )}
 
+        <Text style={styles.label}>Serviço</Text>
+        <View style={styles.chipsRow}>
+          {SERVICES.map((s) => {
+            const isSelected = selectedServices.includes(s);
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.chip, isSelected && styles.chipActive]}
+                onPress={() => selectService(s)}
+              >
+                <Text
+                  style={[styles.chipText, isSelected && styles.chipTextActive]}
+                >
+                  {s}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {requiresContactAlways ? (
           <TouchableOpacity
             style={styles.whatsappButton}
             onPress={() =>
               openPetshopWhatsapp(
-                `Olá! Quero agendar um horário para o pet ${selectedPet?.name ?? ""}.`
+                `Olá! Quero agendar Banho/Tosa para o pet ${selectedPet?.name ?? ""}.`
               )
             }
           >
@@ -253,26 +276,6 @@ export default function NovoAgendamentoScreen({ navigation }) {
           </TouchableOpacity>
         ) : (
           <>
-            <Text style={styles.label}>Serviço</Text>
-            <View style={styles.chipsRow}>
-              {SERVICES.map((s) => {
-                const isSelected = selectedServices.includes(s);
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.chip, isSelected && styles.chipActive]}
-                    onPress={() => selectService(s)}
-                  >
-                    <Text
-                      style={[styles.chipText, isSelected && styles.chipTextActive]}
-                    >
-                      {s}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
             <Text style={styles.label}>Data</Text>
             <TouchableOpacity
               style={styles.inputButton}
